@@ -56,6 +56,7 @@ const player2Choice = document.getElementById("player2-choice");
 const gameResult = document.getElementById("game-result");
 const resetBtn = document.getElementById("reset-btn");
 const choices = document.querySelectorAll(".choice");
+const currentTurn = document.getElementById("current-turn");
 
 // Event Listeners
 createGameBtn.addEventListener("click", createGame);
@@ -219,40 +220,63 @@ function makeChoice(choice) {
 
 // Update game state
 function updateGameState(game) {
-    // Update choices - hide until both players have chosen
-    if (game.player1.choice && game.player2.choice) {
-        // Both players have chosen, show both choices
-        player1Choice.textContent = game.player1.choice;
-        player2Choice.textContent = game.player2.choice;
+    // Update choices based on whether it's the host or joining player
+    if (gameState.isHost) {
+        // Host's view
+        player1Choice.textContent = game.player1.choice || "";
+        player2Choice.textContent = game.player2.choice ? (game.player1.choice ? game.player2.choice : "?") : "";
     } else {
-        // Hide choices if either player hasn't chosen yet
-        player1Choice.textContent = game.player1.choice ? "?" : "";
-        player2Choice.textContent = game.player2.choice ? "?" : "";
+        // Joining player's view
+        player1Choice.textContent = game.player1.choice ? (game.player2.choice ? game.player1.choice : "?") : "";
+        player2Choice.textContent = game.player2.choice || "";
     }
 
     // Update scores
     updateScores(game.player1.score, game.player2.score);
 
+    // Update turn indicator
+    if (!game.player1.choice && !game.player2.choice) {
+        currentTurn.textContent = `${game.player1.name}'s turn`;
+    } else if (game.player1.choice && !game.player2.choice) {
+        currentTurn.textContent = `${game.player2.name}'s turn`;
+    } else if (!game.player1.choice && game.player2.choice) {
+        currentTurn.textContent = `${game.player1.name}'s turn`;
+    } else {
+        currentTurn.textContent = "";
+    }
+
     // Check for winner
     if (game.player1.choice && game.player2.choice) {
         const winner = determineWinner(game.player1.choice, game.player2.choice);
-        if (winner) {
-            gameResult.textContent = `${winner === "player1" ? game.player1.name : game.player2.name} wins!`;
+        if (winner === "player1") {
+            gameResult.textContent = `${game.player1.name} wins!`;
             
             // Update scores in Firebase
             const gameRef = database.ref(`games/${gameState.gameCode}`);
             gameRef.update({
-                [winner]: {
-                    ...game[winner],
-                    score: game[winner].score + 1,
+                player1: {
+                    ...game.player1,
+                    score: game.player1.score + 1,
                     choice: null
                 },
+                player2: {
+                    ...game.player2,
+                    choice: null
+                }
+            });
+        } else if (winner === "player2") {
+            gameResult.textContent = `${game.player2.name} wins!`;
+            
+            // Update scores in Firebase
+            const gameRef = database.ref(`games/${gameState.gameCode}`);
+            gameRef.update({
                 player1: {
                     ...game.player1,
                     choice: null
                 },
                 player2: {
                     ...game.player2,
+                    score: game.player2.score + 1,
                     choice: null
                 }
             });
