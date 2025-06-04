@@ -239,10 +239,16 @@ function makeChoice(choice) {
     const gameRef = database.ref(`games/${gameState.gameCode}`);
     const playerKey = gameState.isHost ? "player1" : "player2";
     
-    gameRef.update({
-        [playerKey]: {
-            ...gameState[playerKey],
-            choice: choice
+    gameRef.once("value", (snapshot) => {
+        const game = snapshot.val();
+        if (game) {
+            gameRef.update({
+                [playerKey]: {
+                    name: game[playerKey].name,
+                    choice: choice,
+                    score: game[playerKey].score
+                }
+            });
         }
     });
 }
@@ -374,16 +380,21 @@ function determineWinner(choice1, choice2) {
 // Reset game
 function resetGame() {
     const gameRef = database.ref(`games/${gameState.gameCode}`);
-    gameRef.update({
-        player1: {
-            name: gameState.playerNames.player1,
-            score: 0,
-            choice: null
-        },
-        player2: {
-            name: gameState.playerNames.player2,
-            score: 0,
-            choice: null
+    gameRef.once("value", (snapshot) => {
+        const game = snapshot.val();
+        if (game) {
+            gameRef.update({
+                player1: {
+                    name: game.player1.name,
+                    score: 0,
+                    choice: null
+                },
+                player2: {
+                    name: game.player2.name,
+                    score: 0,
+                    choice: null
+                }
+            });
         }
     });
     
