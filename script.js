@@ -301,12 +301,13 @@ function updateGameState(game) {
     // Check for winner
     if (game.player1.choice && game.player2.choice) {
         const winner = determineWinner(game.player1.choice, game.player2.choice);
+        const gameRef = database.ref(`games/${gameState.gameCode}`);
+        
         if (winner === "player1") {
             const dare = getRandomDare();
             gameResult.textContent = `${game.player1.name} wins! ${game.player2.name} must: ${dare}`;
             
             // Update scores in Firebase
-            const gameRef = database.ref(`games/${gameState.gameCode}`);
             gameRef.update({
                 player1: {
                     name: game.player1.name,
@@ -323,7 +324,6 @@ function updateGameState(game) {
             gameResult.textContent = `${game.player2.name} wins! ${game.player1.name} must: ${dare}`;
             
             // Update scores in Firebase
-            const gameRef = database.ref(`games/${gameState.gameCode}`);
             gameRef.update({
                 player1: {
                     name: game.player1.name,
@@ -339,7 +339,6 @@ function updateGameState(game) {
             gameResult.textContent = "It's a tie! No dare this time!";
             
             // Reset choices in Firebase
-            const gameRef = database.ref(`games/${gameState.gameCode}`);
             gameRef.update({
                 player1: {
                     name: game.player1.name,
