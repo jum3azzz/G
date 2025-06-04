@@ -109,8 +109,8 @@ function createGame() {
     gameRef.on("value", (snapshot) => {
         const game = snapshot.val();
         if (game) {
-            if (game.player2.name) {
-                // Player 2 has joined
+            if (game.status === "playing") {
+                // Game has started
                 waitingScreen.classList.add("hidden");
                 gameArea.classList.remove("hidden");
                 
