@@ -5,7 +5,8 @@ const firebaseConfig = {
     projectId: "rock-paper-scissors-game-b7511",
     storageBucket: "rock-paper-scissors-game-b7511.firebasestorage.app",
     messagingSenderId: "21157019299",
-    appId: "1:21157019299:web:f1725775e235a3cc5b0916"
+    appId: "1:21157019299:web:f1725775e235a3cc5b0916",
+    databaseURL: "https://rock-paper-scissors-game-b7511-default-rtdb.europe-west1.firebasedatabase.app"
 };
 
 // Initialize Firebase
@@ -125,8 +126,12 @@ function createGame() {
 
 // Join an existing game
 function joinGame() {
+    console.log('Join game function called');
     const gameCode = gameCodeInput.value.trim().toUpperCase();
     const player2Name = player1NameInput.value.trim();
+
+    console.log('Game code:', gameCode);
+    console.log('Player name:', player2Name);
 
     if (!gameCode || !player2Name) {
         alert('Please enter a game code and your name');
@@ -135,7 +140,10 @@ function joinGame() {
 
     // Check if game exists
     const gameRef = database.ref(`games/${gameCode}`);
+    console.log('Checking game existence...');
+    
     gameRef.once('value', (snapshot) => {
+        console.log('Game data received:', snapshot.val());
         const game = snapshot.val();
         if (!game) {
             alert('Game not found');
@@ -147,35 +155,43 @@ function joinGame() {
             return;
         }
 
+        console.log('Updating game with player 2...');
         // Update game with player 2
         gameRef.update({
             'player2.name': player2Name,
             status: 'playing'
+        }).then(() => {
+            console.log('Game updated successfully');
+            // Update local game state
+            gameState.playerNames.player1 = game.player1.name;
+            gameState.playerNames.player2 = player2Name;
+            gameState.gameCode = gameCode;
+            gameState.isHost = false;
+
+            // Hide setup screen and show game area
+            setupScreen.classList.add('hidden');
+            waitingScreen.classList.add('hidden');
+            gameArea.classList.remove('hidden');
+
+            // Update UI
+            player1Display.textContent = game.player1.name;
+            player2Display.textContent = player2Name;
+            updateScores(0, 0);
+
+            // Listen for game updates
+            gameRef.on('value', (snapshot) => {
+                const game = snapshot.val();
+                if (game) {
+                    updateGameState(game);
+                }
+            });
+        }).catch((error) => {
+            console.error('Error updating game:', error);
+            alert('Error joining game. Please try again.');
         });
-
-        // Update local game state
-        gameState.playerNames.player1 = game.player1.name;
-        gameState.playerNames.player2 = player2Name;
-        gameState.gameCode = gameCode;
-        gameState.isHost = false;
-
-        // Hide setup screen and show game area
-        setupScreen.classList.add('hidden');
-        waitingScreen.classList.add('hidden');
-        gameArea.classList.remove('hidden');
-
-        // Update UI
-        player1Display.textContent = game.player1.name;
-        player2Display.textContent = player2Name;
-        updateScores(0, 0);
-
-        // Listen for game updates
-        gameRef.on('value', (snapshot) => {
-            const game = snapshot.val();
-            if (game) {
-                updateGameState(game);
-            }
-        });
+    }).catch((error) => {
+        console.error('Error checking game:', error);
+        alert('Error checking game. Please try again.');
     });
 }
 
