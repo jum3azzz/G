@@ -23,8 +23,8 @@ const database = firebase.database();
 const gameState = {
     currentPlayer: 1,
     playerNames: {
-        player1: '',
-        player2: ''
+        player1: "",
+        player2: ""
     },
     choices: {
         player1: null,
@@ -39,30 +39,30 @@ const gameState = {
 };
 
 // DOM Elements
-const setupScreen = document.getElementById('setup-screen');
-const waitingScreen = document.getElementById('waiting-screen');
-const gameArea = document.getElementById('game-area');
-const player1NameInput = document.getElementById('player1-name');
-const createGameBtn = document.getElementById('create-game');
-const joinGameBtn = document.getElementById('join-game');
-const gameCodeInput = document.getElementById('game-code');
-const gameCodeDisplay = document.getElementById('game-code-display');
-const player1Display = document.getElementById('player1-display');
-const player2Display = document.getElementById('player2-display');
-const player1Score = document.getElementById('player1-score');
-const player2Score = document.getElementById('player2-score');
-const player1Choice = document.getElementById('player1-choice');
-const player2Choice = document.getElementById('player2-choice');
-const gameResult = document.getElementById('game-result');
-const resetBtn = document.getElementById('reset-btn');
-const choices = document.querySelectorAll('.choice');
+const setupScreen = document.getElementById("setup-screen");
+const waitingScreen = document.getElementById("waiting-screen");
+const gameArea = document.getElementById("game-area");
+const player1NameInput = document.getElementById("player1-name");
+const createGameBtn = document.getElementById("create-game");
+const joinGameBtn = document.getElementById("join-game");
+const gameCodeInput = document.getElementById("game-code");
+const gameCodeDisplay = document.getElementById("game-code-display");
+const player1Display = document.getElementById("player1-display");
+const player2Display = document.getElementById("player2-display");
+const player1Score = document.getElementById("player1-score");
+const player2Score = document.getElementById("player2-score");
+const player1Choice = document.getElementById("player1-choice");
+const player2Choice = document.getElementById("player2-choice");
+const gameResult = document.getElementById("game-result");
+const resetBtn = document.getElementById("reset-btn");
+const choices = document.querySelectorAll(".choice");
 
 // Event Listeners
-createGameBtn.addEventListener('click', createGame);
-joinGameBtn.addEventListener('click', joinGame);
-resetBtn.addEventListener('click', resetGame);
+createGameBtn.addEventListener("click", createGame);
+joinGameBtn.addEventListener("click", joinGame);
+resetBtn.addEventListener("click", resetGame);
 choices.forEach(choice => {
-    choice.addEventListener('click', () => makeChoice(choice.textContent));
+    choice.addEventListener("click", () => makeChoice(choice.textContent));
 });
 
 // Create a new game
@@ -70,12 +70,12 @@ function createGame() {
     const player1Name = player1NameInput.value.trim();
 
     if (!player1Name) {
-        alert('Please enter your name');
+        alert("Please enter your name");
         return;
     }
 
-    // Generate a random game code
-    const gameCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+    // Generate a random game code (only letters and numbers)
+    const gameCode = Math.random().toString(36).substring(2, 8).toUpperCase().replace(/[^A-Z0-9]/g, "");
     
     // Set up the game in Firebase
     const gameRef = database.ref(`games/${gameCode}`);
@@ -91,7 +91,7 @@ function createGame() {
             score: 0
         },
         currentPlayer: 1,
-        status: 'waiting'
+        status: "waiting"
     });
 
     // Update local game state
@@ -100,18 +100,18 @@ function createGame() {
     gameState.isHost = true;
 
     // Show waiting screen
-    setupScreen.classList.add('hidden');
-    waitingScreen.classList.remove('hidden');
-    gameArea.classList.add('hidden');
+    setupScreen.classList.add("hidden");
+    waitingScreen.classList.remove("hidden");
+    gameArea.classList.add("hidden");
     gameCodeDisplay.textContent = gameCode;
 
     // Listen for player 2 joining
-    gameRef.on('value', (snapshot) => {
+    gameRef.on("value", (snapshot) => {
         const game = snapshot.val();
         if (game && game.player2.name) {
             // Hide waiting screen and show game area
-            waitingScreen.classList.add('hidden');
-            gameArea.classList.remove('hidden');
+            waitingScreen.classList.add("hidden");
+            gameArea.classList.remove("hidden");
             
             // Update UI
             player1Display.textContent = game.player1.name;
@@ -126,46 +126,50 @@ function createGame() {
 
 // Join an existing game
 function joinGame() {
-    console.log('Join game function called');
-    const gameCode = gameCodeInput.value.trim().toUpperCase();
+    console.log("Join game function called");
+    const gameCode = gameCodeInput.value.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
     const player2Name = player1NameInput.value.trim();
 
-    console.log('Attempting to join game with:');
-    console.log('- Game code:', gameCode);
-    console.log('- Player name:', player2Name);
+    console.log("Attempting to join game with:");
+    console.log("- Game code:", gameCode);
+    console.log("- Player name:", player2Name);
 
     if (!gameCode || !player2Name) {
-        alert('Please enter a game code and your name');
+        alert("Please enter a game code and your name");
         return;
     }
 
     // Check if game exists
     const gameRef = database.ref(`games/${gameCode}`);
-    console.log('Checking game at path:', `games/${gameCode}`);
+    console.log("Checking game at path:", `games/${gameCode}`);
     
-    gameRef.once('value', (snapshot) => {
+    gameRef.once("value", (snapshot) => {
         const gameData = snapshot.val();
-        console.log('Received game data:', gameData);
+        console.log("Received game data:", gameData);
         
         if (!gameData) {
-            console.log('Game not found in database');
-            alert('Game not found. Please check the game code and try again.');
+            console.log("Game not found in database");
+            alert("Game not found. Please check the game code and try again.");
             return;
         }
 
-        if (gameData.status === 'playing') {
-            console.log('Game already in progress');
-            alert('Game already in progress');
+        if (gameData.status === "playing") {
+            console.log("Game already in progress");
+            alert("Game already in progress");
             return;
         }
 
-        console.log('Game found, updating with player 2...');
+        console.log("Game found, updating with player 2...");
         // Update game with player 2
         gameRef.update({
-            'player2.name': player2Name,
-            status: 'playing'
+            player2: {
+                name: player2Name,
+                choice: null,
+                score: 0
+            },
+            status: "playing"
         }).then(() => {
-            console.log('Game updated successfully');
+            console.log("Game updated successfully");
             // Update local game state
             gameState.playerNames.player1 = gameData.player1.name;
             gameState.playerNames.player2 = player2Name;
@@ -173,9 +177,9 @@ function joinGame() {
             gameState.isHost = false;
 
             // Hide setup screen and show game area
-            setupScreen.classList.add('hidden');
-            waitingScreen.classList.add('hidden');
-            gameArea.classList.remove('hidden');
+            setupScreen.classList.add("hidden");
+            waitingScreen.classList.add("hidden");
+            gameArea.classList.remove("hidden");
 
             // Update UI
             player1Display.textContent = gameData.player1.name;
@@ -183,29 +187,32 @@ function joinGame() {
             updateScores(0, 0);
 
             // Listen for game updates
-            gameRef.on('value', (snapshot) => {
+            gameRef.on("value", (snapshot) => {
                 const game = snapshot.val();
                 if (game) {
                     updateGameState(game);
                 }
             });
         }).catch((error) => {
-            console.error('Error updating game:', error);
-            alert('Error joining game. Please try again.');
+            console.error("Error updating game:", error);
+            alert("Error joining game. Please try again.");
         });
     }).catch((error) => {
-        console.error('Error checking game:', error);
-        alert('Error checking game. Please try again.');
+        console.error("Error checking game:", error);
+        alert("Error checking game. Please try again.");
     });
 }
 
 // Make a choice
 function makeChoice(choice) {
     const gameRef = database.ref(`games/${gameState.gameCode}`);
-    const playerKey = gameState.isHost ? 'player1' : 'player2';
+    const playerKey = gameState.isHost ? "player1" : "player2";
     
     gameRef.update({
-        [`${playerKey}.choice`]: choice
+        [playerKey]: {
+            ...gameState[playerKey],
+            choice: choice
+        }
     });
 }
 
@@ -226,14 +233,24 @@ function updateGameState(game) {
     if (game.player1.choice && game.player2.choice) {
         const winner = determineWinner(game.player1.choice, game.player2.choice);
         if (winner) {
-            gameResult.textContent = `${winner === 'player1' ? game.player1.name : game.player2.name} wins!`;
+            gameResult.textContent = `${winner === "player1" ? game.player1.name : game.player2.name} wins!`;
             
             // Update scores in Firebase
             const gameRef = database.ref(`games/${gameState.gameCode}`);
             gameRef.update({
-                [`${winner}.score`]: game[winner].score + 1,
-                'player1.choice': null,
-                'player2.choice': null
+                [winner]: {
+                    ...game[winner],
+                    score: game[winner].score + 1,
+                    choice: null
+                },
+                player1: {
+                    ...game.player1,
+                    choice: null
+                },
+                player2: {
+                    ...game.player2,
+                    choice: null
+                }
             });
         } else {
             gameResult.textContent = "It's a tie!";
@@ -241,8 +258,14 @@ function updateGameState(game) {
             // Reset choices in Firebase
             const gameRef = database.ref(`games/${gameState.gameCode}`);
             gameRef.update({
-                'player1.choice': null,
-                'player2.choice': null
+                player1: {
+                    ...game.player1,
+                    choice: null
+                },
+                player2: {
+                    ...game.player2,
+                    choice: null
+                }
             });
         }
     }
@@ -259,26 +282,32 @@ function determineWinner(choice1, choice2) {
     if (choice1 === choice2) return null;
     
     if (
-        (choice1 === '✊' && choice2 === '✌️') ||
-        (choice1 === '✋' && choice2 === '✊') ||
-        (choice1 === '✌️' && choice2 === '✋')
+        (choice1 === "✊" && choice2 === "✌️") ||
+        (choice1 === "✋" && choice2 === "✊") ||
+        (choice1 === "✌️" && choice2 === "✋")
     ) {
-        return 'player1';
+        return "player1";
     }
-    return 'player2';
+    return "player2";
 }
 
 // Reset game
 function resetGame() {
     const gameRef = database.ref(`games/${gameState.gameCode}`);
     gameRef.update({
-        'player1.score': 0,
-        'player2.score': 0,
-        'player1.choice': null,
-        'player2.choice': null
+        player1: {
+            ...gameState.player1,
+            score: 0,
+            choice: null
+        },
+        player2: {
+            ...gameState.player2,
+            score: 0,
+            choice: null
+        }
     });
     
-    gameResult.textContent = '';
-    player1Choice.textContent = '';
-    player2Choice.textContent = '';
+    gameResult.textContent = "";
+    player1Choice.textContent = "";
+    player2Choice.textContent = "";
 }
