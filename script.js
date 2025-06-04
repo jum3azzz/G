@@ -19,6 +19,35 @@ try {
 
 const database = firebase.database();
 
+// Dare list
+const dares = [
+    "Do your best seductive dance move",
+    "Tell me about your most embarrassing dating story",
+    "Do your best runway walk",
+    "Tell me about your biggest crush",
+    "Show me your best 'flirty' face",
+    "Do your best romantic movie scene",
+    "Tell me about your worst date",
+    "Show me your best 'come here' gesture",
+    "Do your best romantic serenade",
+    "Do 10 jumping jacks",
+    "Sing your favorite song for 30 seconds",
+    "Do your best dance move",
+    "Tell a joke",
+    "Make a funny face",
+    "Do your best animal impression",
+    "Give yourself a compliment",
+    "Do 5 push-ups",
+    "Tell me your most embarrassing moment",
+    "Do your best superhero pose",
+    "Share a fun fact about yourself",
+    "Do your best robot dance",
+    "Tell me your dream vacation",
+    "Do your best celebrity impression",
+    "Share your favorite meme",
+    "yapp for 30 mins davs only "
+];
+
 // Game state
 const gameState = {
     currentPlayer: 1,
@@ -218,17 +247,35 @@ function makeChoice(choice) {
     });
 }
 
+// Get random dare
+function getRandomDare() {
+    const randomIndex = Math.floor(Math.random() * dares.length);
+    return dares[randomIndex];
+}
+
 // Update game state
 function updateGameState(game) {
-    // Update choices based on whether it's the host or joining player
-    if (gameState.isHost) {
-        // Host's view
-        player1Choice.textContent = game.player1.choice || "";
-        player2Choice.textContent = game.player2.choice ? (game.player1.choice ? game.player2.choice : "?") : "";
+    // Update choices - hide until both players have chosen
+    if (game.player1.choice && game.player2.choice) {
+        // Both players have chosen, show both choices
+        player1Choice.textContent = game.player1.choice;
+        player2Choice.textContent = game.player2.choice;
+        // Disable choice buttons after both have chosen
+        choices.forEach(choice => choice.disabled = true);
     } else {
-        // Joining player's view
-        player1Choice.textContent = game.player1.choice ? (game.player2.choice ? game.player1.choice : "?") : "";
-        player2Choice.textContent = game.player2.choice || "";
+        // Hide choices if either player hasn't chosen yet
+        player1Choice.textContent = game.player1.choice ? "?" : "";
+        player2Choice.textContent = game.player2.choice ? "?" : "";
+        // Enable choice buttons if it's the player's turn
+        const isPlayer1Turn = !game.player1.choice;
+        const isPlayer2Turn = !game.player2.choice;
+        choices.forEach(choice => {
+            if (gameState.isHost) {
+                choice.disabled = !isPlayer1Turn;
+            } else {
+                choice.disabled = !isPlayer2Turn;
+            }
+        });
     }
 
     // Update scores
@@ -249,49 +296,51 @@ function updateGameState(game) {
     if (game.player1.choice && game.player2.choice) {
         const winner = determineWinner(game.player1.choice, game.player2.choice);
         if (winner === "player1") {
-            gameResult.textContent = `${game.player1.name} wins!`;
+            const dare = getRandomDare();
+            gameResult.textContent = `${game.player1.name} wins! ${game.player2.name} must: ${dare}`;
             
             // Update scores in Firebase
             const gameRef = database.ref(`games/${gameState.gameCode}`);
             gameRef.update({
                 player1: {
-                    ...game.player1,
+                    name: game.player1.name,
                     score: game.player1.score + 1,
                     choice: null
                 },
                 player2: {
-                    ...game.player2,
+                    name: game.player2.name,
                     choice: null
                 }
             });
         } else if (winner === "player2") {
-            gameResult.textContent = `${game.player2.name} wins!`;
+            const dare = getRandomDare();
+            gameResult.textContent = `${game.player2.name} wins! ${game.player1.name} must: ${dare}`;
             
             // Update scores in Firebase
             const gameRef = database.ref(`games/${gameState.gameCode}`);
             gameRef.update({
                 player1: {
-                    ...game.player1,
+                    name: game.player1.name,
                     choice: null
                 },
                 player2: {
-                    ...game.player2,
+                    name: game.player2.name,
                     score: game.player2.score + 1,
                     choice: null
                 }
             });
         } else {
-            gameResult.textContent = "It's a tie!";
+            gameResult.textContent = "It's a tie! No dare this time!";
             
             // Reset choices in Firebase
             const gameRef = database.ref(`games/${gameState.gameCode}`);
             gameRef.update({
                 player1: {
-                    ...game.player1,
+                    name: game.player1.name,
                     choice: null
                 },
                 player2: {
-                    ...game.player2,
+                    name: game.player2.name,
                     choice: null
                 }
             });
@@ -327,12 +376,12 @@ function resetGame() {
     const gameRef = database.ref(`games/${gameState.gameCode}`);
     gameRef.update({
         player1: {
-            ...gameState.player1,
+            name: gameState.playerNames.player1,
             score: 0,
             choice: null
         },
         player2: {
-            ...gameState.player2,
+            name: gameState.playerNames.player2,
             score: 0,
             choice: null
         }
@@ -341,4 +390,9 @@ function resetGame() {
     gameResult.textContent = "";
     player1Choice.textContent = "";
     player2Choice.textContent = "";
+    
+    // Enable choice buttons for the first player's turn
+    choices.forEach(choice => {
+        choice.disabled = false;
+    });
 }
