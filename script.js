@@ -105,20 +105,21 @@ function createGame() {
     gameArea.classList.add("hidden");
     gameCodeDisplay.textContent = gameCode;
 
-    // Listen for player 2 joining
+    // Listen for game updates
     gameRef.on("value", (snapshot) => {
         const game = snapshot.val();
-        if (game && game.player2.name) {
-            // Hide waiting screen and show game area
-            waitingScreen.classList.add("hidden");
-            gameArea.classList.remove("hidden");
-            
-            // Update UI
-            player1Display.textContent = game.player1.name;
-            player2Display.textContent = game.player2.name;
-            updateScores(0, 0);
-            
-            // Start listening for game updates
+        if (game) {
+            if (game.player2.name) {
+                // Player 2 has joined
+                waitingScreen.classList.add("hidden");
+                gameArea.classList.remove("hidden");
+                
+                // Update UI
+                player1Display.textContent = game.player1.name;
+                player2Display.textContent = game.player2.name;
+                updateScores(game.player1.score, game.player2.score);
+            }
+            // Always update game state
             updateGameState(game);
         }
     });
@@ -218,12 +219,15 @@ function makeChoice(choice) {
 
 // Update game state
 function updateGameState(game) {
-    // Update choices
-    if (game.player1.choice) {
+    // Update choices - hide until both players have chosen
+    if (game.player1.choice && game.player2.choice) {
+        // Both players have chosen, show both choices
         player1Choice.textContent = game.player1.choice;
-    }
-    if (game.player2.choice) {
         player2Choice.textContent = game.player2.choice;
+    } else {
+        // Hide choices if either player hasn't chosen yet
+        player1Choice.textContent = game.player1.choice ? "?" : "";
+        player2Choice.textContent = game.player2.choice ? "?" : "";
     }
 
     // Update scores
@@ -268,6 +272,9 @@ function updateGameState(game) {
                 }
             });
         }
+    } else {
+        // Clear result if not both players have chosen
+        gameResult.textContent = "";
     }
 }
 
